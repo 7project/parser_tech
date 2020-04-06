@@ -3,7 +3,11 @@ import logging
 import random
 import requests
 import time
+from openpyxl import Workbook
 
+
+wb = Workbook()
+ws = wb.active
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('PARSING')
@@ -45,11 +49,21 @@ class Parser:
 
         logger.info('%s', a_text_block.text)
 
+        self.data_for_record.append(a_text_block.text,)
+
     def run(self):
         text = self.loading()
         self.parser_page(text=text)
 
 
+    def save_file_xlsx(self):
+        for data in self.data_for_record[:10]:
+            ws.append((data,))
+            logger.info('Записал - %s', data)
+        wb.save('parse.xlsx')
+
+
 if __name__ == '__main__':
     parser = Parser()
     parser.run()
+    parser.save_file_xlsx()
