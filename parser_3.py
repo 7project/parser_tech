@@ -5,7 +5,6 @@ import requests
 import time
 from openpyxl import Workbook
 
-
 wb = Workbook()
 ws = wb.active
 
@@ -22,48 +21,77 @@ class Parser:
         }
         self.domain = 'https://technopoint.ru'
         self.data_for_record = []
+        self.data_links = []
+        self.fields = ['Наименование', 'Код товара', 'Цена', 'Ссылка на картинку']
 
-    def loading(self):
-        url = f'{self.domain}/catalog/recipe/e351231ca6161134/2020-goda/'
+    def loading(self, url):
         while True:
             try:
                 result = self.session.get(url=url)
-                print(result.raise_for_status())
                 break
             except Exception as exp:
                 logger.exception(f'Ошибка в подключении {exp}')
                 time.sleep(random.randint(2, 5))
-                result = self.session.get(url=url, timeout=(25, 10))
-                print(result.raise_for_status())
         return result.text
 
-    def parser_page(self, text):
+    def parser_link(self, text):
         soup = bs4.BeautifulSoup(text, 'lxml')
         data = soup.select('div.n-catalog-product__main')
-        logger.info(f'Длинна списка - {len(data)}')
-        for block in data:
-            self.parse_block(block=block)
+        for block in data[:10]:
+            self._parse_block_link(block=block)
 
-    def parse_block(self, block):
-        a_text_block = block.select_one('a.ui-link')
+    def _parse_block_link(self, block):
+        a_block = block.select_one('a.ui-link')
+        a_link_block = a_block.get('href')
 
-        logger.info('%s', a_text_block.text)
+        link = self.domain + a_link_block
 
-        self.data_for_record.append(a_text_block.text,)
+        code, img_href, price = self.parser_page(link)
+
+        self.data_for_record.append(
+            [
+                a_block.text,
+                code,
+                price,
+                img_href,
+            ],
+        )
+
+    def parser_page(self, link):
+        response = self.loading(link)
+        return self._parser_product_code(response)
+
+    def _parser_product_code(self, response):
+        soup = bs4.BeautifulSoup(response, 'lxml')
+
+        code = soup.select_one('div.price-item-code').select_one('span').text
+
+        img = soup.select_one('a.lightbox-img')
+        if img:
+            img_href = img.get('href')
+        else:
+            img_href = 'None'
+
+        price = soup.select_one('span.current-price-value').get('data-price-value')
+
+        logger.info('Code - %s, href - %s, price - %s', code, img_href, price)
+
+        return code, img_href, price
 
     def run(self):
-        text = self.loading()
-        self.parser_page(text=text)
-
+        url = f'{self.domain}/catalog/recipe/e351231ca6161134/2020-goda/'
+        text = self.loading(url)
+        self.parser_link(text=text)
 
     def save_file_xlsx(self):
-        for data in self.data_for_record[:10]:
-            ws.append((data,))
-            logger.info('Записал - %s', data)
+        ws.append(self.fields)
+        for data in self.data_for_record:
+            ws.append(data)
         wb.save('parse.xlsx')
 
-
+# time run - 85-90 sec
 if __name__ == '__main__':
     parser = Parser()
     parser.run()
     parser.save_file_xlsx()
+
