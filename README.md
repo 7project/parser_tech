@@ -1,0 +1,1 @@
+Parsing technopoint.ru test task.
