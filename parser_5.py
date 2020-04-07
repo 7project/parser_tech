@@ -1,10 +1,11 @@
 import bs4
 import logging
 import random
-import requests
+# import requests
 import time
 import threading
 from openpyxl import Workbook
+from requests_html import HTMLSession
 
 
 logging.basicConfig(level=logging.INFO)
@@ -27,11 +28,11 @@ class ParserPageOne(threading.Thread):
 
     def __init__(self, url, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.session = requests.Session()
-        self.session.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0',
-            'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-        }
+        self.session = HTMLSession()
+        # self.session.headers = {
+        #     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0',
+        #     'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+        # }
         self.url = url
         self.data_for_record = []
 
@@ -42,7 +43,7 @@ class ParserPageOne(threading.Thread):
                 break
             except Exception as exp:
                 logger.exception(f'Ошибка в подключении {exp}')
-                time.sleep(random.randint(2, 5))
+                time.sleep(random.randint(2, 3))
         return result.text
 
     def parser_page(self, link):
@@ -70,11 +71,11 @@ class ParserPageOne(threading.Thread):
 
 class ParserIndex:
     def __init__(self):
-        self.session = requests.Session()
-        self.session.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0',
-            'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-        }
+        self.session = HTMLSession()
+        # self.session.headers = {
+        #     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0',
+        #     'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+        # }
         self.domain = 'https://technopoint.ru'
         self.data_links = []
 
@@ -85,7 +86,7 @@ class ParserIndex:
                 break
             except Exception as exp:
                 logger.exception(f'Ошибка в подключении {exp}')
-                time.sleep(random.randint(2, 5))
+                time.sleep(random.randint(2, 3))
         return result.text
 
     def parser_link(self, response):
@@ -136,6 +137,6 @@ def main():
         ws.append(page.data_for_record)
     wb.save('parse.xlsx')
 
-# Time run func 56 sec.
+# Time run func 11 sec.
 if __name__ == '__main__':
     main()
